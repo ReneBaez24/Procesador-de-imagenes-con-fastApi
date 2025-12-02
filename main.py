@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from PIL import Image, ImageDraw, ImageFont
 from typing import Optional
 import io
@@ -23,11 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuracion
-UPLOAD_DIR = Path("uploads")
-PROCESSED_DIR = Path("processed")
-UPLOAD_DIR.mkdir(exist_ok=True)
-PROCESSED_DIR.mkdir(exist_ok=True)
 
 def agregar_texto_a_imagen(
     imagen_bytes: bytes,
@@ -110,39 +106,31 @@ async def procesar_imagen(
     color_texto: Optional[str] = Form("black", description="Color del texto")
 ):
     """
-    Procesa una imagen agregando texto en las coordenadas especificadas
-    
-    Returns:
-        Imagen procesada en formato JPEG
+    Procesa una imagen agregando texto y la devuelve sin guardarla en disco.
     """
+
     # Validar tipo de archivo
     if not imagen.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
     
     try:
-        # Leer imagen
+        # Leer imagen en bytes
         contenido = await imagen.read()
-        
+
         # Procesar imagen
         imagen_procesada_bytes = agregar_texto_a_imagen(
             contenido, texto, x, y, tamaño_fuente, color_texto
         )
-        
-        # Generar nombre unico para el archivo
-        nombre_archivo = f"{uuid.uuid4().hex}.jpg"
-        ruta_archivo = PROCESSED_DIR / nombre_archivo
-        
-        # Guardar archivo temporal
-        with open(ruta_archivo, "wb") as f:
-            f.write(imagen_procesada_bytes)
-        
-        # Devolver archivo
-        return FileResponse(
-            path=ruta_archivo,
+
+        # Devolver la imagen sin guardarla en disco
+        return StreamingResponse(
+            io.BytesIO(imagen_procesada_bytes),
             media_type="image/jpeg",
-            filename=f"imagen_procesada_{texto[:20]}.jpg"
+            headers={
+                "Content-Disposition": f'attachment; filename="imagen_procesada_{texto[:20]}.jpg"'
+            }
         )
-        
+    
     except HTTPException:
         raise
     except Exception as e:
