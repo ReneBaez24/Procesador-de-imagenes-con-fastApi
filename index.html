@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador de Imágenes</title>
+    <style>
+        /* Mantén todos los estilos iguales que antes */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .app-description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .coordinates-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .coordinates-container .input-group {
+            flex: 1;
+        }
+        
+        .file-input-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #e9ecef;
+        }
+        
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        #previewBtn {
+            background: #4a5568;
+            color: white;
+        }
+        
+        #processBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .preview-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .preview-container.active {
+            display: block;
+        }
+        
+        .image-container {
+            position: relative;
+            margin-top: 20px;
+            display: inline-block;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .coordinate-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 0, 0, 0.5);
+            border: 2px solid red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            pointer-events: none;
+        }
+        
+        .coordinate-marker.active {
+            display: block;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .result-container {
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+        
+        .result-container.active {
+            display: block;
+        }
+        
+        #processedImage {
+            max-width: 100%;
+            max-height: 400px;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            margin-top: 15px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 25px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #218838;
+        }
+        
+        .server-status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .server-status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .server-status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .log-console {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .log-console.active {
+            display: block;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+        }
+        
+        .debug-toggle {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Procesador de Imágenes con FastAPI</h1>
+        
+        <p class="app-description">
+            Sube una imagen, ingresa las coordenadas y el texto que deseas agregar.
+            La imagen será procesada y podrás descargar el resultado.
+        </p>
+        
+        <div id="serverStatus" class="server-status offline">
+            ⚠️ Conectando al servidor...
+        </div>
+        
+        <div class="form-container">
+            <div class="input-group">
+                <label for="texto">Texto a agregar:</label>
+                <input type="text" id="texto" placeholder="Ingresa el nombre o texto" value="Prueba">
+            </div>
+            
+            <div class="coordinates-container">
+                <div class="input-group">
+                    <label for="coordX">Coordenada X:</label>
+                    <input type="number" id="coordX" placeholder="50" min="0" value="50">
+                </div>
+                <div class="input-group">
+                    <label for="coordY">Coordenada Y:</label>
+                    <input type="number" id="coordY" placeholder="50" min="0" value="50">
+                </div>
+            </div>
+            
+            <div class="file-input-container">
+                <label class="file-input-label">
+                    📁 Arrastra una imagen o haz clic para seleccionar
+                    <input type="file" id="imagenInput" class="file-input" accept="image/*">
+                </label>
+            </div>
+            
+            <div class="button-group">
+                <button id="previewBtn">👁️ Vista Previa</button>
+                <button id="processBtn">🚀 Procesar Imagen</button>
+            </div>
+        </div>
+        
+        <div id="previewContainer" class="preview-container">
+            <h3>Vista Previa de Coordenadas</h3>
+            <div class="image-container">
+                <img id="imagePreview" src="" alt="Vista previa">
+                <div id="coordinateMarker" class="coordinate-marker"></div>
+            </div>
+            <p id="coordinateInfo" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <div id="resultContainer" class="result-container">
+            <h3>✅ Imagen Procesada</h3>
+            <img id="processedImage" src="" alt="Imagen procesada">
+            <br>
+            <a id="downloadLink" class="download-btn" download="imagen_procesada.jpg">⬇️ Descargar Imagen</a>
+        </div>
+        
+        <button id="debugToggle" class="debug-toggle">🔧 Mostrar Debug</button>
+        <div id="debugConsole" class="log-console">
+            <div class="log-entry">Consola de depuración:</div>
+        </div>
+    </div>
+
+    <script>
+        // ========== CONFIGURACIÓN ==========
+        const SERVER_URL = 'http://localhost:8000';
+        let debugMode = false;
+        
+        // ========== ELEMENTOS DEL DOM ==========
+        const elements = {
+            imagenInput: document.getElementById('imagenInput'),
+            texto: document.getElementById('texto'),
+            coordX: document.getElementById('coordX'),
+            coordY: document.getElementById('coordY'),
+            previewBtn: document.getElementById('previewBtn'),
+            processBtn: document.getElementById('processBtn'),
+            imagePreview: document.getElementById('imagePreview'),
+            coordinateMarker: document.getElementById('coordinateMarker'),
+            coordinateInfo: document.getElementById('coordinateInfo'),
+            previewContainer: document.getElementById('previewContainer'),
+            statusMessage: document.getElementById('statusMessage'),
+            resultContainer: document.getElementById('resultContainer'),
+            processedImage: document.getElementById('processedImage'),
+            downloadLink: document.getElementById('downloadLink'),
+            serverStatus: document.getElementById('serverStatus'),
+            debugConsole: document.getElementById('debugConsole'),
+            debugToggle: document.getElementById('debugToggle')
+        };
+        
+        // ========== ESTADO DE LA APLICACIÓN ==========
+        let state = {
+            imagenSeleccionada: null,
+            urlPreview: null,
+            imagenWidth: 0,
+            imagenHeight: 0
+        };
+        
+        // ========== FUNCIONES DE DEBUG ==========
+        function logDebug(mensaje, tipo = 'info') {
+            if (!debugMode) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timestamp}] ${mensaje}`;
+            
+            if (tipo === 'error') {
+                logEntry.style.color = '#ff5555';
+            } else if (tipo === 'success') {
+                logEntry.style.color = '#55ff55';
+            }
+            
+            elements.debugConsole.appendChild(logEntry);
+            elements.debugConsole.scrollTop = elements.debugConsole.scrollHeight;
+        }
+        
+        // ========== FUNCIONES DE UI ==========
+        function mostrarMensaje(mensaje, tipo = 'info', tiempo = 5000) {
+            logDebug(`UI: ${mensaje}`, tipo);
+            
+            elements.statusMessage.textContent = mensaje;
+            elements.statusMessage.className = `status-message ${tipo}`;
+            elements.statusMessage.style.display = 'block';
+            
+            if (tiempo > 0) {
+                setTimeout(() => {
+                    elements.statusMessage.style.display = 'none';
+                }, tiempo);
+            }
+        }
+        
+        function actualizarEstadoServidor(conectado, mensaje) {
+            elements.serverStatus.textContent = mensaje;
+            elements.serverStatus.className = conectado ? 'server-status online' : 'server-status offline';
+        }
+        
+        // ========== FUNCIONES DE IMAGEN ==========
+        function mostrarPreview() {
+            logDebug('Mostrando vista previa', 'info');
+            
+            if (!state.imagenSeleccionada) {
+                mostrarMensaje('Por favor, selecciona una imagen primero', 'error');
+                return;
+            }
+            
+            const x = parseInt(elements.coordX.value) || 0;
+            const y = parseInt(elements.coordY.value) || 0;
+            
+            if (x === 0 && y === 0) {
+                mostrarMensaje('Ingresa coordenadas válidas para la vista previa', 'error');
+                return;
+            }
+            
+            elements.previewContainer.classList.add('active');
+            actualizarMarcador();
+            
+            const porcentajeX = state.imagenWidth > 0 ? Math.round((x / state.imagenWidth) * 100) : 0;
+            const porcentajeY = state.imagenHeight > 0 ? Math.round((y / state.imagenHeight) * 100) : 0;
+            elements.coordinateInfo.textContent = `Coordenadas: (${x}, ${y}) - ${porcentajeX}% ancho, ${porcentajeY}% alto`;
+            
+            mostrarMensaje(`Marcador posicionado en (${x}, ${y})`, 'success', 3000);
+        }
+        
+        function actualizarMarcador() {
+            const x = parseInt(elements.coordX.value) || 0;
+            const y = parseInt(elements.coordY.value) || 0;
+            
+            // Ajustar coordenadas si la imagen se está mostrando escalada
+            const imgRect = elements.imagePreview.getBoundingClientRect();
+            const scaleX = imgRect.width / state.imagenWidth;
+            const scaleY = imgRect.height / state.imagenHeight;
+            
+            const displayX = x * scaleX;
+            const displayY = y * scaleY;
+            
+            elements.coordinateMarker.style.left = `${displayX}px`;
+            elements.coordinateMarker.style.top = `${displayY}px`;
+            
+            if (x > 0 || y > 0) {
+                elements.coordinateMarker.classList.add('active');
+            } else {
+                elements.coordinateMarker.classList.remove('active');
+            }
+        }
+        
+        // ========== FUNCIONES DE API ==========
+        async function verificarServidor() {
+            try {
+                logDebug('Verificando estado del servidor...', 'info');
+                const response = await fetch(`${SERVER_URL}/health`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    actualizarEstadoServidor(true, `✅ Servidor ${data.service} v${data.version} conectado`);
+                    logDebug('Servidor conectado correctamente', 'success');
+                    return true;
+                } else {
+                    actualizarEstadoServidor(false, '⚠️ Servidor no disponible');
+                    logDebug('Servidor no disponible', 'error');
+                    return false;
+                }
+            } catch (error) {
+                actualizarEstadoServidor(false, '❌ Error conectando al servidor');
+                logDebug(`Error conectando: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function procesarImagen() {
+            logDebug('Iniciando procesamiento de imagen', 'info');
+            
+            // Validaciones
+            if (!state.imagenSeleccionada) {
+                mostrarMensaje('Por favor, selecciona una imagen', 'error');
+                return;
+            }
+            
+            const texto = elements.texto.value.trim();
+            if (!texto) {
+                mostrarMensaje('Por favor, ingresa el texto a agregar', 'error');
+                return;
+            }
+            
+            const x = parseInt(elements.coordX.value) || 0;
+            const y = parseInt(elements.coordY.value) || 0;
+            
+            if (x < 0 || y < 0) {
+                mostrarMensaje('Las coordenadas no pueden ser negativas', 'error');
+                return;
+            }
+            
+            // Mostrar mensaje de procesamiento
+            mostrarMensaje('🔄 Procesando imagen... Por favor espera', 'success');
+            elements.processBtn.disabled = true;
+            elements.processBtn.textContent = '🔄 Procesando...';
+            
+            try {
+                // Crear FormData
+                const formData = new FormData();
+                formData.append('imagen', state.imagenSeleccionada);
+                formData.append('texto', texto);
+                formData.append('x', x.toString());
+                formData.append('y', y.toString());
+                formData.append('tamaño_fuente', '40');
+                formData.append('color_texto', 'black');
+                
+                logDebug(`Enviando a API: texto="${texto}", x=${x}, y=${y}`, 'info');
+                
+                // Enviar solicitud
+                const response = await fetch(`${SERVER_URL}/api/procesar-imagen`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                logDebug(`Respuesta recibida: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    let errorMsg = 'Error procesando la imagen';
+                    try {
+                        const errorText = await response.text();
+                        logDebug(`Error detallado: ${errorText}`, 'error');
+                        
+                        // Intentar parsear como JSON
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMsg = errorData.detail || errorMsg;
+                        } catch {
+                            errorMsg = errorText || errorMsg;
+                        }
+                    } catch {
+                        errorMsg = `Error ${response.status}: ${response.statusText}`;
+                    }
+                    
+                    throw new Error(errorMsg);
+                }
+                
+                // Convertir respuesta a blob
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                logDebug(`Imagen procesada: ${blob.size} bytes`, 'success');
+                
+                // Mostrar imagen procesada
+                elements.processedImage.src = url;
+                elements.processedImage.onload = () => {
+                    logDebug('Imagen procesada cargada en vista', 'success');
+                };
+                
+                // Configurar descarga
+                elements.downloadLink.href = url;
+                elements.downloadLink.download = `imagen_procesada_${texto}.jpg`;
+                
+                // Mostrar resultado
+                elements.resultContainer.classList.add('active');
+                elements.previewContainer.classList.remove('active');
+                
+                mostrarMensaje('✅ Imagen procesada correctamente', 'success');
+                
+            } catch (error) {
+                logDebug(`Error en procesamiento: ${error.message}`, 'error');
+                mostrarMensaje(`❌ ${error.message}`, 'error');
+            } finally {
+                // Restaurar botón
+                elements.processBtn.disabled = false;
+                elements.processBtn.textContent = '🚀 Procesar Imagen';
+            }
+        }
+        
+        // ========== EVENT LISTENERS ==========
+        elements.imagenInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (file && file.type.startsWith('image/')) {
+                logDebug(`Imagen seleccionada: ${file.name} (${(file.size/1024).toFixed(2)} KB)`, 'success');
+                
+                state.imagenSeleccionada = file;
+                
+                // Liberar URL anterior si existe
+                if (state.urlPreview) {
+                    URL.revokeObjectURL(state.urlPreview);
+                }
+                
+                // Crear nueva URL para vista previa
+                state.urlPreview = URL.createObjectURL(file);
+                elements.imagePreview.src = state.urlPreview;
+                
+                // Cuando la imagen se carga, obtener sus dimensiones
+                elements.imagePreview.onload = function() {
+                    state.imagenWidth = this.naturalWidth;
+                    state.imagenHeight = this.naturalHeight;
+                    logDebug(`Dimensiones de imagen: ${state.imagenWidth}x${state.imagenHeight}`, 'info');
+                    
+                    // Habilitar botones
+                    elements.previewBtn.disabled = false;
+                    elements.processBtn.disabled = false;
+                    
+                    // Establecer coordenadas por defecto si están en 0
+                    if (elements.coordX.value == 0) {
+                        elements.coordX.value = Math.floor(state.imagenWidth * 0.1);
+                    }
+                    if (elements.coordY.value == 0) {
+                        elements.coordY.value = Math.floor(state.imagenHeight * 0.1);
+                    }
+                    
+                    mostrarMensaje('Imagen cargada correctamente', 'success');
+                };
+                
+            } else {
+                mostrarMensaje('Por favor, selecciona una imagen válida', 'error');
+                resetearFormulario();
+            }
+        });
+        
+        // Cuando la imagen de vista previa se carga, actualizar el marcador
+        elements.imagePreview.addEventListener('load', function() {
+            actualizarMarcador();
+        });
+        
+        // Actualizar marcador cuando cambian las coordenadas
+        elements.coordX.addEventListener('input', actualizarMarcador);
+        elements.coordY.addEventListener('input', actualizarMarcador);
+        
+        // Botón de vista previa
+        elements.previewBtn.addEventListener('click', mostrarPreview);
+        
+        // Botón de procesar
+        elements.processBtn.addEventListener('click', procesarImagen);
+        
+        // Botón de debug
+        elements.debugToggle.addEventListener('click', function() {
+            debugMode = !debugMode;
+            elements.debugConsole.classList.toggle('active', debugMode);
+            this.textContent = debugMode ? '🔧 Ocultar Debug' : '🔧 Mostrar Debug';
+            logDebug(`Modo debug ${debugMode ? 'activado' : 'desactivado'}`, 'info');
+        });
+        
+        // Permitir hacer clic en la imagen para establecer coordenadas
+        elements.imagePreview.addEventListener('click', function(e) {
+            if (!state.imagenSeleccionada) return;
+            
+            const rect = this.getBoundingClientRect();
+            const scaleX = state.imagenWidth / rect.width;
+            const scaleY = state.imagenHeight / rect.height;
+            
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+            
+            elements.coordX.value = x;
+            elements.coordY.value = y;
+            
+            actualizarMarcador();
+            logDebug(`Coordenadas establecidas por clic: (${x}, ${y})`, 'info');
+            mostrarMensaje(`Coordenadas establecidas en (${x}, ${y})`, 'success', 2000);
+        });
+        
+        // ========== FUNCIONES AUXILIARES ==========
+        function resetearFormulario() {
+            state.imagenSeleccionada = null;
+            if (state.urlPreview) {
+                URL.revokeObjectURL(state.urlPreview);
+                state.urlPreview = null;
+            }
+            elements.imagePreview.src = '';
+            elements.previewBtn.disabled = true;
+            elements.processBtn.disabled = true;
+            elements.previewContainer.classList.remove('active');
+            elements.resultContainer.classList.remove('active');
+            elements.coordinateMarker.classList.remove('active');
+            logDebug('Formulario reseteado', 'info');
+        }
+        
+        // ========== INICIALIZACIÓN ==========
+        window.addEventListener('load', function() {
+            logDebug('Aplicación iniciada', 'info');
+            verificarServidor();
+            
+            // Verificar servidor cada 30 segundos
+            setInterval(verificarServidor, 30000);
+            
+            // Mostrar instrucciones iniciales
+            setTimeout(() => {
+                mostrarMensaje('Selecciona una imagen para comenzar', 'info', 10000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
